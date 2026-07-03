@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#121212">
+  <title>麻將戰情室</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #121212;
+      --surface: #1E1E1E;
+      --surface-2: #262626;
+      --border: #333;
+      --border-soft: #2a2a2a;
+      --text: #E0E0E0;
+      --text-dim: #888;
+      --text-mute: #555;
+      --win: #ff4d4f;
+      --lose: #52c41a;
+      --zero: #666;
+      --gold: #FFD700;
+      --silver: #C0C0C0;
+      --bronze: #CD7F32;
+      --accent: #1890ff;
+      --danger: #ff4d4f;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang TC", "Microsoft JhengHei", sans-serif;
+      font-size: 15px;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+    }
+
+    #app {
+      width: 100%;
+      max-width: 500px;
+      min-height: 100vh;
+      padding: 20px 18px 80px;
+      position: relative;
+    }
+
+    /* ===== 通用元件 ===== */
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 14px;
+      margin-bottom: 18px;
+      border-bottom: 1px solid var(--border);
+    }
+    .topbar h1 {
+      margin: 0;
+      font-size: 20px;
+      color: #FFF;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .topbar .sub {
+      display: block;
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 3px;
+      font-weight: 400;
+    }
+    .topbar .actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+    .btn:hover { background: var(--surface-2); }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary {
+      background: var(--win);
+      color: #fff;
+      border-color: var(--win);
+    }
+    .btn-primary:hover { background: #ff6b6d; }
+    .btn-primary:disabled {
+      background: #3a1f20;
+      border-color: #3a1f20;
+      color: #7a5a5b;
+      cursor: not-allowed;
+    }
+    .btn-secondary {
+      background: transparent;
+      color: var(--text-dim);
+    }
+    .btn-icon {
+      padding: 8px 10px;
+      font-size: 15px;
+    }
+
+    /* ===== Player Card ===== */
+    .player-card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 13px;
+      border-left: 4px solid transparent;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .player-card:active { transform: scale(0.98); }
+    .player-card.rank-1 { border-left-color: var(--gold); box-shadow: 0 0 15px rgba(255, 215, 0, 0.08); }
+    .player-card.rank-2 { border-left-color: var(--silver); }
+    .player-card.rank-3 { border-left-color: var(--bronze); }
+    .player-card.rank-4 { border-left-color: var(--text-mute); }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .player-info { display: flex; align-items: center; gap: 10px; }
+    .rank-badge {
+      background: var(--border);
+      color: #fff;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+    .rank-badge.gold { background: var(--gold); color: #000; }
+    .rank-badge.silver { background: var(--silver); color: #000; }
+    .rank-badge.bronze { background: var(--bronze); color: #000; }
+    .name {
+      font-size: 17px;
+      font-weight: bold;
+      color: #FFF;
+    }
+    .score {
+      font-size: 20px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+    .text-win { color: var(--win); }
+    .text-lose { color: var(--lose); }
+    .text-zero { color: var(--zero); }
+
+    /* ===== Sparkline ===== */
+    .trend-section {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      height: 40px;
+      border-top: 1px dashed var(--border);
+      padding-top: 10px;
+    }
+    .trend-label {
+      font-size: 11px;
+      color: var(--text-mute);
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+    .trend-baseline {
+      flex: 1;
+      height: 24px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      overflow: hidden;
+    }
+    .trend-baseline::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: var(--border);
+    }
+    .bar {
+      width: 10px;
+      border-radius: 2px;
+      position: relative;
+      z-index: 1;
+      min-height: 2px;
+      flex-shrink: 0;
+    }
+    .bar.win { background-color: var(--win); }
+    .bar.lose { background-color: var(--lose); }
+    .bar.zero { background-color: var(--zero); height: 2px; }
+
+    /* ===== Section ===== */
+    .section {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+    .section-title {
+      font-size: 13px;
+      color: var(--text-dim);
+      margin: 0 0 12px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    .chart-wrap {
+      position: relative;
+      height: 260px;
+    }
+
+    /* ===== Stats Grid ===== */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .stat-box {
+      background: var(--surface);
+      border-radius: 10px;
+      padding: 12px 14px;
+    }
+    .stat-label {
+      font-size: 11px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+    .stat-value {
+      font-size: 22px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      color: #FFF;
+    }
+    .stat-value.small { font-size: 18px; }
+
+    /* ===== Login ===== */
+    .login-wrap {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: calc(100vh - 40px);
+      padding: 0 4px;
+    }
+    .login-brand {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    .login-brand h1 {
+      font-size: 32px;
+      margin: 0 0 6px;
+      color: #FFF;
+      letter-spacing: 2px;
+    }
+    .login-brand p {
+      color: var(--text-dim);
+      font-size: 13px;
+      margin: 0;
+      letter-spacing: 4px;
+    }
+
+    /* ===== Form ===== */
+    .form-group {
+      margin-bottom: 14px;
+    }
+    .form-label {
+      display: block;
+      font-size: 13px;
+      color: var(--text-dim);
+      margin-bottom: 6px;
+    }
+    .form-input {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 12px 14px;
+      border-radius: 6px;
+      font-size: 15px;
+      font-family: inherit;
+      transition: border-color 0.15s;
+    }
+    .form-input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .form-input[type="number"] {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      font-weight: 600;
+    }
+    .form-input[type="date"] {
+      color-scheme: dark;
+    }
+
+    /* ===== Add Record Row ===== */
+    .score-row {
+      display: flex;
+      align-items: center;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-bottom: 8px;
+      gap: 10px;
+    }
+    .score-row-name {
+      flex: 1;
+      font-size: 15px;
+      font-weight: 600;
+      color: #FFF;
+    }
+    .score-row input {
+      background: transparent;
+      border: none;
+      color: var(--text);
+      padding: 6px 0;
+      font-size: 16px;
+      font-family: inherit;
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      text-align: right;
+      width: 100px;
+    }
+    .score-row input:focus { outline: none; }
+    .score-row input.pos { color: var(--win); }
+    .score-row input.neg { color: var(--lose); }
+
+    .sum-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 16px;
+      background: var(--surface-2);
+      border-radius: 8px;
+      margin: 14px 0 18px;
+      border: 1px solid var(--border);
+    }
+    .sum-bar.error {
+      border-color: var(--danger);
+      background: #2a1516;
+    }
+    .sum-bar.ok {
+      border-color: var(--lose);
+      background: #14251a;
+    }
+    .sum-label { font-size: 13px; color: var(--text-dim); }
+    .sum-value {
+      font-size: 20px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .btn-full {
+      width: 100%;
+      padding: 15px;
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+
+    /* ===== States ===== */
+    .loading {
+      text-align: center;
+      color: var(--text-dim);
+      padding: 60px 20px;
+      font-size: 14px;
+    }
+    .loading::after {
+      content: '';
+      display: block;
+      width: 20px;
+      height: 20px;
+      margin: 15px auto 0;
+      border: 2px solid var(--border);
+      border-top-color: var(--text);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .error-box {
+      background: #2a1516;
+      border: 1px solid var(--danger);
+      color: #ffb3b5;
+      padding: 14px 16px;
+      border-radius: 8px;
+      margin-bottom: 14px;
+      font-size: 14px;
+    }
+    .success-box {
+      background: #14251a;
+      border: 1px solid var(--lose);
+      color: #a8e8bc;
+      padding: 14px 16px;
+      border-radius: 8px;
+      margin-bottom: 14px;
+      font-size: 14px;
+    }
+    .empty {
+      text-align: center;
+      color: var(--text-mute);
+      padding: 40px 20px;
+      font-size: 14px;
+    }
+
+    /* ===== FAB ===== */
+    .fab {
+      position: fixed;
+      bottom: 22px;
+      right: calc(50% - 250px + 20px);
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--win);
+      color: #fff;
+      border: none;
+      font-size: 28px;
+      font-weight: 300;
+      line-height: 56px;
+      text-align: center;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(255, 77, 79, 0.4);
+      transition: transform 0.15s;
+      z-index: 10;
+    }
+    .fab:active { transform: scale(0.94); }
+
+    @media (max-width: 540px) {
+      .fab { right: 20px; }
+    }
+
+    /* ===== Utility ===== */
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      color: var(--text-dim);
+      text-decoration: none;
+      font-size: 13px;
+      padding: 6px 0;
+      cursor: pointer;
+      background: none;
+      border: none;
+      font-family: inherit;
+    }
+    .back-link:hover { color: var(--text); }
+
+    .hint {
+      color: var(--text-mute);
+      font-size: 12px;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="loading">載入中</div>
+  </div>
+
+  <script>
+    // =========================
+    // 設定
+    // =========================
+    const API_BASE = 'https://script.google.com/macros/s/AKfycbw2XbX4GsFdv5AWdrycNp6OIGB5o8QzIPKEXML3sEIqbJ8PyC5zwl4VGUdxXHzOfRTy/exec';
+    const AUTH_HASH = 'bGVpMDMwMzoxMjM0NTY='; // base64('lei0303:123456') — 弱混淆，防路人
+    const AUTH_KEY = 'mahjong_auth';
+    const PALETTE = ['#ff4d4f', '#1890ff', '#faad14', '#52c41a', '#722ed1', '#eb2f96', '#13c2c2', '#a0d911'];
+
+    // =========================
+    // 全域狀態
+    // =========================
+    const state = {
+      data: null,        // API 回傳的原始 payload
+      loading: false,
+      error: null,
+      chartInstances: [] // 追蹤 Chart 實例，切頁時銷毀
+    };
+
+    // =========================
+    // Utils
+    // =========================
+    const $ = (sel, root = document) => root.querySelector(sel);
+    const escapeHtml = s => String(s).replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[c]);
+
+    function fmtNumber(n) {
+      if (n === 0 || n == null) return '0';
+      const sign = n > 0 ? '+' : '-';
+      return sign + Math.abs(n).toLocaleString('en-US');
+    }
+
+    function scoreClass(n) {
+      if (n > 0) return 'text-win';
+      if (n < 0) return 'text-lose';
+      return 'text-zero';
+    }
+
+    function todayStr() {
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    function parseDate(s) {
+      if (!s) return null;
+      const d = new Date(s);
+      if (isNaN(d.getTime())) return null;
+      const y = d.getFullYear();
+      // 過濾掉像 "426" 這種被解析為西元 426 年的髒資料
+      if (y < 2000 || y > 2100) return null;
+      return d;
+    }
+
+    function isoDate(d) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    function shortDate(iso) {
+      // "2026-06-20" -> "06/20"
+      const parts = iso.split('-');
+      return parts.length === 3 ? `${parts[1]}/${parts[2]}` : iso;
+    }
+
+    function displayName(name) {
+      // 隊伍名字有 \n，改成 " / "
+      return String(name || '').replace(/[\r\n]+/g, ' / ');
+    }
+
+    function toApiDate(inputDate) {
+      // YYYY-MM-DD → YYYY/MM/DD
+      if (!inputDate) return '';
+      return inputDate.replaceAll('-', '/');
+    }
+
+    function colorFor(pKey) {
+      const idx = parseInt(String(pKey).replace(/\D/g, ''), 10) - 1;
+      return PALETTE[((idx % PALETTE.length) + PALETTE.length) % PALETTE.length];
+    }
+
+    function destroyCharts() {
+      for (const c of state.chartInstances) {
+        try { c.destroy(); } catch {}
+      }
+      state.chartInstances = [];
+    }
+
+    // =========================
+    // Auth
+    // =========================
+    function isAuthed() {
+      return localStorage.getItem(AUTH_KEY) === AUTH_HASH;
+    }
+    function login(user, pwd) {
+      const hash = btoa(`${user}:${pwd}`);
+      if (hash === AUTH_HASH) {
+        localStorage.setItem(AUTH_KEY, hash);
+        return true;
+      }
+      return false;
+    }
+    function logout() {
+      localStorage.removeItem(AUTH_KEY);
+      state.data = null;
+      location.hash = '#/login';
+    }
+
+    // =========================
+    // API
+    // =========================
+    async function fetchData({ force = false } = {}) {
+      if (state.data && !force) return state.data;
+      state.loading = true;
+      state.error = null;
+      try {
+        const res = await fetch(API_BASE, { method: 'GET' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        if (json.status !== 'success') {
+          throw new Error(json.message || '後端回傳失敗');
+        }
+        state.data = json;
+        return json;
+      } catch (err) {
+        state.error = err.message || String(err);
+        throw err;
+      } finally {
+        state.loading = false;
+      }
+    }
+
+    async function submitRecord({ date, scores }) {
+      const body = new URLSearchParams();
+      if (date) body.set('date', date);
+      for (const [k, v] of Object.entries(scores)) {
+        body.set(k, String(v));
+      }
+      // 不主動設 Content-Type，讓瀏覽器帶 URLSearchParams 預設的 application/x-www-form-urlencoded
+      const res = await fetch(API_BASE, {
+        method: 'POST',
+        body,
+        redirect: 'follow'
+      });
+      const json = await res.json();
+      return json;
+    }
+
+    // =========================
+    // 資料聚合
+    // =========================
+    // 將 history 依日期正序、同日合併，計算各玩家累積 & 每日淨勝負
+    function computeCumulative(payload) {
+      const { dashboard, history } = payload;
+      const pKeys = Object.keys(dashboard);
+
+      // 解析日期並過濾髒資料
+      const parsed = (history || [])
+        .map(row => ({ row, d: parseDate(row.date) }))
+        .filter(x => x.d != null);
+
+      // 依日期正序排
+      parsed.sort((a, b) => a.d - b.d);
+
+      // 同日合併
+      const byDate = new Map(); // isoDate -> { pKey: sum }
+      for (const { row, d } of parsed) {
+        const key = isoDate(d);
+        if (!byDate.has(key)) byDate.set(key, {});
+        const bucket = byDate.get(key);
+        for (const k of pKeys) {
+          bucket[k] = (bucket[k] || 0) + (Number(row[k]) || 0);
+        }
+      }
+
+      const dates = [...byDate.keys()];
+      const daily = {};   // pKey -> [每日淨勝負]
+      const series = {};  // pKey -> [累積]
+      const running = {};
+      for (const k of pKeys) { daily[k] = []; series[k] = []; running[k] = 0; }
+      for (const d of dates) {
+        const bucket = byDate.get(d);
+        for (const k of pKeys) {
+          const v = bucket[k] || 0;
+          daily[k].push(v);
+          running[k] += v;
+          series[k].push(running[k]);
+        }
+      }
+      return { dates, daily, series, pKeys };
+    }
+
+    function computePlayerStats(payload, pKey) {
+      // 場次/勝率用 row 層級（同一天多場算多場）
+      const parsed = (payload.history || []).filter(row => parseDate(row.date) != null);
+      const scores = parsed.map(r => Number(r[pKey]) || 0);
+      const played = scores.filter(s => s !== 0);
+      const totalGames = played.length;
+      const wins = played.filter(s => s > 0).length;
+      const losses = played.filter(s => s < 0).length;
+      const winRate = totalGames > 0 ? wins / totalGames : 0;
+
+      // 最大單日贏/輸：用同日合併後的資料
+      const { daily } = computeCumulative(payload);
+      const dayScores = (daily[pKey] || []).filter(s => s !== 0);
+      const maxWin = dayScores.length ? Math.max(...dayScores, 0) : 0;
+      const maxLoss = dayScores.length ? Math.min(...dayScores, 0) : 0;
+      return { totalGames, wins, losses, winRate, maxWin, maxLoss };
+    }
+
+    // =========================
+    // Router
+    // =========================
+    async function route() {
+      destroyCharts();
+      const hash = location.hash || '#/dashboard';
+      const app = $('#app');
+
+      // 認證守衛
+      if (!isAuthed() && !hash.startsWith('#/login')) {
+        location.hash = '#/login';
+        return;
+      }
+      if (isAuthed() && hash.startsWith('#/login')) {
+        location.hash = '#/dashboard';
+        return;
+      }
+
+      if (hash.startsWith('#/login')) {
+        app.innerHTML = viewLogin();
+        bindLogin();
+        return;
+      }
+
+      // 需要資料的頁面
+      app.innerHTML = `<div class="loading">載入資料中</div>`;
+      try {
+        await fetchData();
+      } catch (err) {
+        app.innerHTML = viewError(state.error);
+        bindErrorRetry();
+        return;
+      }
+
+      if (hash.startsWith('#/player/')) {
+        const pKey = hash.split('/')[2];
+        if (!pKey || !state.data.dashboard[pKey]) {
+          location.hash = '#/dashboard';
+          return;
+        }
+        app.innerHTML = viewPlayer(pKey);
+        bindPlayerPage(pKey);
+        return;
+      }
+
+      if (hash.startsWith('#/add')) {
+        app.innerHTML = viewAdd();
+        bindAddPage();
+        return;
+      }
+
+      // 預設 dashboard
+      app.innerHTML = viewDashboard();
+      bindDashboard();
+    }
+
+    // =========================
+    // Views
+    // =========================
+    function viewLogin() {
+      return `
+        <div class="login-wrap">
+          <div class="login-brand">
+            <h1>🀄 麻將戰情室</h1>
+            <p>MAHJONG DESK</p>
+          </div>
+          <form id="loginForm">
+            <div class="form-group">
+              <label class="form-label">帳號</label>
+              <input class="form-input" name="user" type="text" autocomplete="username" autocapitalize="none" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">密碼</label>
+              <input class="form-input" name="pwd" type="password" autocomplete="current-password" required>
+            </div>
+            <div id="loginError" style="display:none;" class="error-box">帳號或密碼錯誤</div>
+            <button type="submit" class="btn btn-primary btn-full">登入</button>
+          </form>
+        </div>
+      `;
+    }
+
+    function viewError(msg) {
+      return `
+        <div class="topbar">
+          <div><h1>連線失敗</h1></div>
+        </div>
+        <div class="error-box">${escapeHtml(msg || '未知錯誤')}</div>
+        <button class="btn btn-primary btn-full" id="retryBtn">重試</button>
+        <button class="btn btn-secondary btn-full" id="logoutBtn2" style="margin-top:8px;">登出</button>
+      `;
+    }
+
+    function viewDashboard() {
+      const { dashboard } = state.data;
+      const players = Object.entries(dashboard)
+        .map(([pKey, v]) => ({ pKey, ...v }))
+        .sort((a, b) => b.total - a.total);
+
+      const cardsHtml = players.map((p, idx) => {
+        const rank = idx + 1;
+        const rankCls = `rank-${Math.min(rank, 4)}`;
+        const badgeCls = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : '';
+        const scoreCls = scoreClass(p.total);
+        return `
+          <div class="player-card ${rankCls}" data-pkey="${escapeHtml(p.pKey)}">
+            <div class="card-top">
+              <div class="player-info">
+                <div class="rank-badge ${badgeCls}">${rank}</div>
+                <div class="name">${escapeHtml(displayName(p.name))}${rank === 1 ? ' 👑' : ''}</div>
+              </div>
+              <div class="score ${scoreCls}">${fmtNumber(p.total)}</div>
+            </div>
+            <div class="trend-section">
+              <div class="trend-label">近5場</div>
+              ${sparklineHtml(p.trend)}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      return `
+        <div class="topbar">
+          <div>
+            <h1>🏆 賽季總結算</h1>
+            <span class="sub">最後更新 ${new Date().toLocaleString('zh-TW', { hour12: false })}</span>
+          </div>
+          <div class="actions">
+            <button class="btn btn-icon" id="refreshBtn" title="重新整理">↻</button>
+            <button class="btn btn-icon" id="logoutBtn" title="登出">⎋</button>
+          </div>
+        </div>
+
+        ${players.length === 0 ? '<div class="empty">尚無對局紀錄</div>' : cardsHtml}
+
+        <div class="section" style="margin-top:20px;">
+          <h2 class="section-title">📈 累積淨勝負</h2>
+          <div class="chart-wrap">
+            <canvas id="cumChart"></canvas>
+          </div>
+        </div>
+
+        <button class="fab" id="fabAdd" title="新增紀錄">＋</button>
+      `;
+    }
+
+    function sparklineHtml(trend) {
+      const arr = Array.isArray(trend) ? trend.slice(-5) : [];
+      // 補到 5 格
+      while (arr.length < 5) arr.unshift(0);
+      const maxAbs = Math.max(1, ...arr.map(v => Math.abs(v)));
+      const bars = arr.map(v => {
+        if (v === 0) return `<div class="bar zero"></div>`;
+        const cls = v > 0 ? 'win' : 'lose';
+        const h = Math.max(3, Math.round((Math.abs(v) / maxAbs) * 20));
+        // 贏往上長：中心點往上偏 h/2，讓底邊落在 baseline
+        // 輸往下長：中心點往下偏 h/2，讓頂邊落在 baseline
+        const ty = v > 0 ? -h / 2 : h / 2;
+        return `<div class="bar ${cls}" style="height:${h}px;transform:translateY(${ty}px);"></div>`;
+      }).join('');
+      return `<div class="trend-baseline">${bars}</div>`;
+    }
+
+    function viewPlayer(pKey) {
+      const p = state.data.dashboard[pKey];
+      const stats = computePlayerStats(state.data, pKey);
+      return `
+        <div class="topbar">
+          <div>
+            <button class="back-link" id="backBtn">← 返回</button>
+            <h1 style="margin-top:2px;">${escapeHtml(displayName(p.name))}</h1>
+            <span class="sub">個人結算</span>
+          </div>
+          <div class="actions">
+            <div class="score ${scoreClass(p.total)}" style="font-size:22px;">${fmtNumber(p.total)}</div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2 class="section-title">累積淨勝負</h2>
+          <div class="chart-wrap">
+            <canvas id="playerChart"></canvas>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="stat-label">總場數</div>
+            <div class="stat-value">${stats.totalGames}</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">勝率</div>
+            <div class="stat-value">${(stats.winRate * 100).toFixed(1)}<span style="font-size:14px;color:var(--text-dim);">%</span></div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">勝場</div>
+            <div class="stat-value text-win">${stats.wins}</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">負場</div>
+            <div class="stat-value text-lose">${stats.losses}</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">最大單日贏</div>
+            <div class="stat-value small text-win">${fmtNumber(stats.maxWin)}</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">最大單日輸</div>
+            <div class="stat-value small text-lose">${fmtNumber(stats.maxLoss)}</div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2 class="section-title">近 5 場</h2>
+          <div class="trend-section" style="border-top:none; padding-top:0;">
+            ${sparklineHtml(p.trend)}
+          </div>
+        </div>
+      `;
+    }
+
+    function viewAdd() {
+      const { dashboard } = state.data;
+      const pKeys = Object.keys(dashboard);
+      const rowsHtml = pKeys.map(k => `
+        <div class="score-row">
+          <div class="score-row-name">${escapeHtml(displayName(dashboard[k].name))}</div>
+          <input type="number" inputmode="numeric" pattern="-?[0-9]*" data-pkey="${escapeHtml(k)}" placeholder="0" value="0">
+        </div>
+      `).join('');
+      return `
+        <div class="topbar">
+          <div>
+            <button class="back-link" id="backBtn">← 返回</button>
+            <h1 style="margin-top:2px;">新增對局</h1>
+            <span class="sub">所有分數合計必須為 0</span>
+          </div>
+        </div>
+
+        <div id="submitMsg"></div>
+
+        <div class="form-group">
+          <label class="form-label">日期</label>
+          <input class="form-input" type="date" id="dateInput" value="${todayStr()}">
+        </div>
+
+        <div>${rowsHtml}</div>
+
+        <div class="sum-bar ok" id="sumBar">
+          <div class="sum-label">當前合計</div>
+          <div class="sum-value" id="sumValue">0</div>
+        </div>
+
+        <button class="btn btn-primary btn-full" id="submitBtn">確認送出</button>
+        <button class="btn btn-secondary btn-full" id="resetBtn">清除重填</button>
+      `;
+    }
+
+    // =========================
+    // Bindings
+    // =========================
+    function bindLogin() {
+      $('#loginForm').addEventListener('submit', e => {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        const ok = login(fd.get('user').trim(), fd.get('pwd'));
+        if (ok) {
+          location.hash = '#/dashboard';
+        } else {
+          $('#loginError').style.display = 'block';
+        }
+      });
+    }
+
+    function bindErrorRetry() {
+      $('#retryBtn')?.addEventListener('click', () => {
+        state.data = null;
+        route();
+      });
+      $('#logoutBtn2')?.addEventListener('click', logout);
+    }
+
+    function bindDashboard() {
+      // 卡片點擊
+      document.querySelectorAll('.player-card').forEach(el => {
+        el.addEventListener('click', () => {
+          const pKey = el.getAttribute('data-pkey');
+          location.hash = `#/player/${pKey}`;
+        });
+      });
+      $('#refreshBtn')?.addEventListener('click', async () => {
+        state.data = null;
+        route();
+      });
+      $('#logoutBtn')?.addEventListener('click', logout);
+      $('#fabAdd')?.addEventListener('click', () => location.hash = '#/add');
+
+      // 累積曲線
+      const { dates, series, pKeys } = computeCumulative(state.data);
+      if (dates.length > 0) {
+        drawCumulativeChart('cumChart', dates, series, pKeys.map(k => ({
+          key: k,
+          name: state.data.dashboard[k].name,
+          color: colorFor(k)
+        })));
+      }
+    }
+
+    function bindPlayerPage(pKey) {
+      $('#backBtn').addEventListener('click', () => {
+        if (history.length > 1) history.back();
+        else location.hash = '#/dashboard';
+      });
+      const { dates, series } = computeCumulative(state.data);
+      const p = state.data.dashboard[pKey];
+      if (dates.length > 0) {
+        drawCumulativeChart('playerChart', dates, { [pKey]: series[pKey] }, [{
+          key: pKey,
+          name: p.name,
+          color: colorFor(pKey)
+        }], { fill: true });
+      }
+    }
+
+    function bindAddPage() {
+      $('#backBtn').addEventListener('click', () => {
+        if (history.length > 1) history.back();
+        else location.hash = '#/dashboard';
+      });
+
+      const inputs = document.querySelectorAll('.score-row input[data-pkey]');
+      const sumBar = $('#sumBar');
+      const sumValueEl = $('#sumValue');
+      const submitBtn = $('#submitBtn');
+
+      function recalc() {
+        let sum = 0;
+        inputs.forEach(inp => {
+          const v = Number(inp.value) || 0;
+          sum += v;
+          inp.classList.remove('pos', 'neg');
+          if (v > 0) inp.classList.add('pos');
+          else if (v < 0) inp.classList.add('neg');
+        });
+        sumValueEl.textContent = fmtNumber(sum);
+        sumValueEl.className = 'sum-value ' + scoreClass(sum);
+        sumBar.classList.remove('ok', 'error');
+        if (sum === 0) sumBar.classList.add('ok');
+        else sumBar.classList.add('error');
+        submitBtn.disabled = sum !== 0;
+      }
+
+      inputs.forEach(inp => {
+        inp.addEventListener('input', recalc);
+        inp.addEventListener('focus', () => { if (inp.value === '0') inp.value = ''; });
+        inp.addEventListener('blur', () => { if (inp.value === '' || inp.value === '-') inp.value = '0'; recalc(); });
+      });
+      recalc();
+
+      $('#resetBtn').addEventListener('click', () => {
+        inputs.forEach(inp => { inp.value = '0'; });
+        recalc();
+      });
+
+      submitBtn.addEventListener('click', async () => {
+        const dateVal = $('#dateInput').value;
+        const scores = {};
+        inputs.forEach(inp => {
+          scores[inp.getAttribute('data-pkey')] = Number(inp.value) || 0;
+        });
+        // 前端最後守門
+        const sum = Object.values(scores).reduce((a, b) => a + b, 0);
+        if (sum !== 0) {
+          showSubmitMsg('合計非 0，無法送出', 'error');
+          return;
+        }
+        submitBtn.disabled = true;
+        submitBtn.textContent = '送出中...';
+        try {
+          const resp = await submitRecord({ date: toApiDate(dateVal), scores });
+          if (resp.status === 'success') {
+            showSubmitMsg('✓ 已寫入，返回主頁...', 'ok');
+            state.data = null;
+            setTimeout(() => { location.hash = '#/dashboard'; }, 900);
+          } else {
+            showSubmitMsg(resp.message || '寫入失敗', 'error');
+            submitBtn.disabled = false;
+            submitBtn.textContent = '確認送出';
+          }
+        } catch (err) {
+          showSubmitMsg('送出失敗：' + (err.message || err), 'error');
+          submitBtn.disabled = false;
+          submitBtn.textContent = '確認送出';
+        }
+      });
+    }
+
+    function showSubmitMsg(msg, type) {
+      const el = $('#submitMsg');
+      const cls = type === 'ok' ? 'success-box' : 'error-box';
+      el.innerHTML = `<div class="${cls}">${escapeHtml(msg)}</div>`;
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // =========================
+    // Chart.js 繪圖
+    // =========================
+    function drawCumulativeChart(canvasId, dates, series, players, opts = {}) {
+      const ctx = document.getElementById(canvasId);
+      if (!ctx) return;
+      const datasets = players.map(p => ({
+        label: p.name,
+        data: series[p.key],
+        borderColor: p.color,
+        backgroundColor: opts.fill ? hexToRgba(p.color, 0.15) : 'transparent',
+        borderWidth: 2,
+        tension: 0.25,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        fill: !!opts.fill
+      }));
+      const chart = new Chart(ctx, {
+        type: 'line',
+        data: { labels: dates, datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: {
+              display: players.length > 1,
+              position: 'bottom',
+              labels: {
+                color: '#aaa',
+                font: { size: 11 },
+                boxWidth: 12,
+                padding: 10
+              }
+            },
+            tooltip: {
+              backgroundColor: '#000',
+              borderColor: '#333',
+              borderWidth: 1,
+              titleColor: '#fff',
+              bodyColor: '#fff',
+              padding: 10,
+              callbacks: {
+                title: items => items[0]?.label || '',
+                label: ctx => `${ctx.dataset.label}: ${fmtNumber(ctx.parsed.y)}`
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: '#222' },
+              ticks: {
+                color: '#888',
+                font: { size: 10 },
+                maxRotation: 0,
+                autoSkip: true,
+                maxTicksLimit: 6,
+                callback: function(val) {
+                  const label = this.getLabelForValue(val);
+                  return shortDate(label);
+                }
+              }
+            },
+            y: {
+              grid: { color: '#222', drawTicks: false },
+              ticks: {
+                color: '#888',
+                font: { size: 10 },
+                callback: v => v.toLocaleString('en-US')
+              }
+            }
+          }
+        }
+      });
+      state.chartInstances.push(chart);
+    }
+
+    function hexToRgba(hex, a) {
+      const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      if (!m) return `rgba(255,255,255,${a})`;
+      const [r, g, b] = [1, 2, 3].map(i => parseInt(m[i], 16));
+      return `rgba(${r},${g},${b},${a})`;
+    }
+
+    // =========================
+    // 啟動
+    // =========================
+    window.addEventListener('hashchange', route);
+    window.addEventListener('DOMContentLoaded', route);
+  </script>
+</body>
+</html>

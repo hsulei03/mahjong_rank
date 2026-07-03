@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>麻將記帳 UI 提案</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #888; /* 深灰背景凸顯三個手機畫面 */
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 40px;
+      padding: 40px 20px;
+      margin: 0;
+    }
+
+    /* 模擬手機外框 */
+    .phone-mockup {
+      width: 375px;
+      height: 650px;
+      border-radius: 36px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+      position: relative;
+      box-sizing: border-box;
+      padding: 30px 20px;
+    }
+
+    .title-tag {
+      position: absolute;
+      top: -30px;
+      left: 0;
+      color: white;
+      font-weight: bold;
+      font-size: 18px;
+    }
+
+    /* =========================================
+       提案一：金融看盤風 (Dark Mode)
+       ========================================= */
+    .style-1 {
+      background-color: #121212;
+      color: #E0E0E0;
+      border: 6px solid #333;
+    }
+    .style-1 h2 { margin-top: 0; color: #FFF; font-size: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+    .style-1 .input-group { margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+    .style-1 label { font-size: 14px; color: #aaa; }
+    .style-1 input { 
+      background-color: #1E1E1E; border: 1px solid #333; color: #fff; 
+      padding: 10px; width: 60%; border-radius: 4px; text-align: right;
+    }
+    .style-1 input:focus { outline: none; border-color: #555; }
+    .style-1 .btn-win { background-color: #ff4d4f; color: white; border: none; padding: 12px; width: 48%; border-radius: 4px; font-weight: bold; }
+    .style-1 .btn-lose { background-color: #52c41a; color: white; border: none; padding: 12px; width: 48%; border-radius: 4px; font-weight: bold; }
+    .style-1 .btn-group { display: flex; justify-content: space-between; margin-top: 30px; }
+
+    /* =========================================
+       提案二：光影立體風 (Neumorphism)
+       ========================================= */
+    .style-2 {
+      background-color: #E0E5EC;
+      color: #4A5568;
+      border: 6px solid #CBD5E0;
+    }
+    .style-2 h2 { margin-top: 0; font-size: 20px; text-align: center; color: #2D3748; }
+    .style-2 .neumorphic-card {
+      background-color: #E0E5EC;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5);
+      margin-bottom: 20px;
+    }
+    .style-2 .input-group { margin-bottom: 15px; }
+    .style-2 label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 8px; color: #718096; }
+    .style-2 input { 
+      width: 100%; box-sizing: border-box; padding: 12px; border: none; border-radius: 10px;
+      background-color: #E0E5EC; color: #2D3748;
+      box-shadow: inset 6px 6px 10px 0 rgba(163,177,198, 0.6), inset -6px -6px 10px 0 rgba(255,255,255, 0.5);
+    }
+    .style-2 input:focus { outline: none; }
+    .style-2 button {
+      width: 100%; padding: 15px; border: none; border-radius: 12px; font-weight: bold; font-size: 16px;
+      background-color: #E0E5EC; color: #2B6CB0;
+      box-shadow: 6px 6px 10px 0 rgba(163,177,198, 0.6), -6px -6px 10px 0 rgba(255,255,255, 0.5);
+      cursor: pointer;
+    }
+    .style-2 button:active {
+      box-shadow: inset 6px 6px 10px 0 rgba(163,177,198, 0.6), inset -6px -6px 10px 0 rgba(255,255,255, 0.5);
+    }
+
+    /* =========================================
+       提案三：極簡現代風 (Modern App)
+       ========================================= */
+    .style-3 {
+      background-color: #FFFFFF;
+      color: #111827;
+      border: 6px solid #E5E7EB;
+    }
+    .style-3 h2 { margin-top: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 24px;}
+    .style-3 .input-group { margin-bottom: 20px; }
+    .style-3 label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+    .style-3 input { 
+      width: 100%; box-sizing: border-box; padding: 16px; border: none; border-radius: 16px;
+      background-color: #F3F4F6; font-size: 18px; font-weight: 600; color: #111827;
+    }
+    .style-3 input:focus { outline: none; background-color: #E5E7EB; }
+    .style-3 button {
+      width: 100%; padding: 18px; border: none; border-radius: 16px; font-weight: bold; font-size: 16px;
+      background-color: #000000; color: #FFFFFF; cursor: pointer; margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 提案一 -->
+  <div style="position: relative;">
+    <div class="title-tag">1. 金融看盤風 (Dark Mode)</div>
+    <div class="phone-mockup style-1">
+      <h2>本日結算</h2>
+      <div class="input-group">
+        <label>玩家 A (東)</label>
+        <input type="number" value="1200">
+      </div>
+      <div class="input-group">
+        <label>玩家 B (南)</label>
+        <input type="number" value="-300">
+      </div>
+      <div class="input-group">
+        <label>玩家 C (西)</label>
+        <input type="number" value="0">
+      </div>
+      <div class="input-group">
+        <label>玩家 D (北)</label>
+        <input type="number" value="-900">
+      </div>
+      <div class="btn-group">
+        <button class="btn-lose">清除重填</button>
+        <button class="btn-win">確認送出</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 提案二 -->
+  <div style="position: relative;">
+    <div class="title-tag">2. 光影立體風 (Neumorphism)</div>
+    <div class="phone-mockup style-2">
+      <h2>戰績輸入</h2>
+      <div class="neumorphic-card">
+        <div class="input-group">
+          <label>玩家 A 分數</label>
+          <input type="number" value="1200">
+        </div>
+        <div class="input-group">
+          <label>玩家 B 分數</label>
+          <input type="number" value="-300">
+        </div>
+      </div>
+      <button>寫入記錄</button>
+    </div>
+  </div>
+
+  <!-- 提案三 -->
+  <div style="position: relative;">
+    <div class="title-tag">3. 極簡現代風 (Modern App)</div>
+    <div class="phone-mockup style-3">
+      <h2>新增記錄</h2>
+      <div class="input-group">
+        <label>玩家 A</label>
+        <input type="number" value="1200">
+      </div>
+      <div class="input-group">
+        <label>玩家 B</label>
+        <input type="number" value="-300">
+      </div>
+      <div class="input-group">
+        <label>玩家 C</label>
+        <input type="number" value="-900">
+      </div>
+      <button>送出 (Submit)</button>
+    </div>
+  </div>
+
+</body>
+</html>

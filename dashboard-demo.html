@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>麻將戰情室 UI</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #333;
+      display: flex;
+      justify-content: center;
+      padding: 40px 20px;
+      margin: 0;
+    }
+
+    /* 模擬手機外框 */
+    .phone-mockup {
+      width: 375px;
+      height: 700px;
+      border-radius: 36px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      background-color: #121212;
+      color: #E0E0E0;
+      border: 6px solid #444;
+      overflow-y: auto;
+      box-sizing: border-box;
+      padding: 30px 20px;
+    }
+    
+    /* 隱藏捲軸但保持可滾動 */
+    .phone-mockup::-webkit-scrollbar { display: none; }
+
+    .header { text-align: center; border-bottom: 1px solid #333; padding-bottom: 15px; margin-bottom: 20px; }
+    .header h2 { margin: 0; color: #FFF; font-size: 22px; }
+    .header p { margin: 5px 0 0; color: #888; font-size: 12px; }
+
+    /* 排行榜卡片 */
+    .player-card {
+      background-color: #1E1E1E;
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 15px;
+      border-left: 4px solid transparent;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .rank-1 { border-left-color: #FFD700; box-shadow: 0 0 15px rgba(255, 215, 0, 0.1); }
+    .rank-2 { border-left-color: #C0C0C0; }
+    .rank-3 { border-left-color: #CD7F32; }
+    .rank-4 { border-left-color: #555; }
+
+    .card-top { display: flex; justify-content: space-between; align-items: center; }
+    .player-info { display: flex; align-items: center; gap: 10px; }
+    .rank-badge { 
+      background: #333; color: white; width: 24px; height: 24px; 
+      border-radius: 50%; display: flex; align-items: center; justify-content: center; 
+      font-size: 12px; font-weight: bold;
+    }
+    .name { font-size: 18px; font-weight: bold; color: #FFF; }
+    
+    .score { font-size: 20px; font-weight: 800; }
+    .text-win { color: #ff4d4f; } /* 台灣紅漲 */
+    .text-lose { color: #52c41a; } /* 台灣綠跌 */
+
+    /* 波動走勢圖 (Sparkline) */
+    .trend-section { display: flex; align-items: flex-end; gap: 4px; height: 40px; border-top: 1px dashed #333; padding-top: 10px; }
+    .trend-label { font-size: 11px; color: #666; flex-shrink: 0; margin-right: 5px; margin-bottom: 2px;}
+    .bar { width: 12%; border-radius: 2px 2px 0 0; }
+    .bar.win { background-color: #ff4d4f; }
+    .bar.lose { background-color: #52c41a; border-radius: 0 0 2px 2px; }
+    
+    .trend-container { display: flex; align-items: center; width: 100%; height: 100%; }
+    .baseline { width: 100%; height: 1px; background-color: #444; position: relative; display: flex; align-items: center; justify-content: space-between; gap: 2px;}
+    
+  </style>
+</head>
+<body>
+
+  <div class="phone-mockup">
+    <div class="header">
+      <h2>🏆 賽季總結算</h2>
+      <p>最後更新: 2026/07/03</p>
+    </div>
+
+    <!-- 第一名 -->
+    <div class="player-card rank-1">
+      <div class="card-top">
+        <div class="player-info">
+          <div class="rank-badge" style="background:#FFD700; color:#000;">1</div>
+          <div class="name">玩家 A 👑</div>
+        </div>
+        <div class="score text-win">+ 3,250</div>
+      </div>
+      <div class="trend-section">
+        <div class="trend-label">近5場波動</div>
+        <div class="baseline">
+          <!-- 這裡用高度模擬分數多寡，往上長是贏，往下長是輸 -->
+          <div class="bar win" style="height: 20px; transform: translateY(-10px);"></div>
+          <div class="bar lose" style="height: 10px; transform: translateY(5px);"></div>
+          <div class="bar win" style="height: 35px; transform: translateY(-17px);"></div>
+          <div class="bar win" style="height: 15px; transform: translateY(-7px);"></div>
+          <div class="bar win" style="height: 25px; transform: translateY(-12px);"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 第二名 -->
+    <div class="player-card rank-2">
+      <div class="card-top">
+        <div class="player-info">
+          <div class="rank-badge">2</div>
+          <div class="name">玩家 C</div>
+        </div>
+        <div class="score text-win">+ 800</div>
+      </div>
+      <div class="trend-section">
+        <div class="trend-label">近5場波動</div>
+        <div class="baseline">
+          <div class="bar lose" style="height: 15px; transform: translateY(7px);"></div>
+          <div class="bar win" style="height: 10px; transform: translateY(-5px);"></div>
+          <div class="bar lose" style="height: 25px; transform: translateY(12px);"></div>
+          <div class="bar win" style="height: 20px; transform: translateY(-10px);"></div>
+          <div class="bar win" style="height: 30px; transform: translateY(-15px);"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 第三名 -->
+    <div class="player-card rank-3">
+      <div class="card-top">
+        <div class="player-info">
+          <div class="rank-badge">3</div>
+          <div class="name">玩家 B</div>
+        </div>
+        <div class="score text-lose">- 1,150</div>
+      </div>
+      <div class="trend-section">
+        <div class="trend-label">近5場波動</div>
+        <div class="baseline">
+          <div class="bar win" style="height: 15px; transform: translateY(-7px);"></div>
+          <div class="bar lose" style="height: 20px; transform: translateY(10px);"></div>
+          <div class="bar lose" style="height: 10px; transform: translateY(5px);"></div>
+          <div class="bar lose" style="height: 35px; transform: translateY(17px);"></div>
+          <div class="bar win" style="height: 5px; transform: translateY(-2px);"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 第四名 -->
+    <div class="player-card rank-4">
+      <div class="card-top">
+        <div class="player-info">
+          <div class="rank-badge">4</div>
+          <div class="name">玩家 D</div>
+        </div>
+        <div class="score text-lose">- 2,900</div>
+      </div>
+      <div class="trend-section">
+        <div class="trend-label">近5場波動</div>
+        <div class="baseline">
+          <div class="bar lose" style="height: 30px; transform: translateY(15px);"></div>
+          <div class="bar lose" style="height: 15px; transform: translateY(7px);"></div>
+          <div class="bar lose" style="height: 25px; transform: translateY(12px);"></div>
+          <div class="bar lose" style="height: 20px; transform: translateY(10px);"></div>
+          <div class="bar lose" style="height: 35px; transform: translateY(17px);"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>
